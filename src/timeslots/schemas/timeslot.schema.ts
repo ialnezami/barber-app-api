@@ -1,22 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
-export type TimeSlotDocument = TimeSlot & Document;
-
-@Schema({
-  timestamps: true,
-  toJSON: {
-    transform: (doc: any, ret: any) => {
-      return {
-        ...ret,
-        id: ret._id?.toString?.() ?? ret._id,
-        _id: undefined,
-        __v: undefined,
-      };
-    },
-  },
-})
-export class TimeSlot {
+@Schema({ timestamps: true })
+export class TimeSlot extends Document {
   @Prop({ required: true })
   date: Date;
 
@@ -26,11 +12,17 @@ export class TimeSlot {
   @Prop({ required: true })
   endTime: Date;
 
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  barberId: Types.ObjectId;
+
   @Prop({ default: false })
   isBooked: boolean;
 
-  @Prop()
-  bookedBy?: string;
+  @Prop({ type: Types.ObjectId, ref: 'Appointment' })
+  appointmentId: Types.ObjectId;
+
+  @Prop({ default: true })
+  isAvailable: boolean;
 }
 
 export const TimeSlotSchema = SchemaFactory.createForClass(TimeSlot);

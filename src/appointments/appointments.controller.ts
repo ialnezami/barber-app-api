@@ -39,6 +39,6 @@ export class AppointmentsController {
   @ApiResponse({ status: 200, description: 'Appointment cancelled successfully' })
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   async remove(@Param('id') id: string, @Request() req) {
-    return this.appointmentsService.remove(+id, req.user.id, req.user.role);
+    return this.appointmentsService.remove(id, req.user.id, req.user.role);
   }
 }

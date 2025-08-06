@@ -1,80 +1,87 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Appointment } from './schemas/appointment.schema';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectModel(Appointment.name)
+    private appointmentModel: Model<Appointment>,
+  ) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto, userId: number) {
-    return this.prisma.appointment.create({
-      data: {
-        date: new Date(createAppointmentDto.date),
-        userId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+  async create(createAppointmentDto: CreateAppointmentDto, userId: string): Promise<Appointment> {
+    const appointment = new this.appointmentModel({
+      ...createAppointmentDto,
+      date: new Date(createAppointmentDto.date),
+      userId,
     });
+    return appointment.save();
   }
 
-  async findAll() {
-    return this.prisma.appointment.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
+  async findAll(): Promise<Appointment[]> {
+    return this.appointmentModel
+      .find()
+      .populate('userId', 'name email')
+      .sort({ date: 1 })
+      .exec();
   }
 
-  async findByUserId(userId: number) {
-    return this.prisma.appointment.findMany({
-      where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
+  async findByUserId(userId: string): Promise<Appointment[]> {
+    return this.appointmentModel
+      .find({ userId })
+      .populate('userId', 'name email')
+      .sort({ date: 1 })
+      .exec();
   }
 
-  async remove(id: number, userId: number, userRole: string) {
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { id },
-    });
-
+  async findById(id: string): Promise<Appointment> {
+    const appointment = await this.appointmentModel
+      .findById(id)
+      .populate('userId', 'name email')
+      .exec();
+    
     if (!appointment) {
       throw new NotFoundException('Appointment not found');
     }
+    
+    return appointment;
+  }
+
+  async remove(id: string, userId: string, userRole: string): Promise<Appointment> {
+    const appointment = await this.findById(id);
 
     // Only allow the owner or barber to cancel
-    if (appointment.userId !== userId && userRole !== 'BARBER') {
+    if (appointment.userId.toString() !== userId && userRole !== 'BARBER') {
       throw new ForbiddenException('You can only cancel your own appointments');
     }
 
-    return this.prisma.appointment.delete({
-      where: { id },
-    });
+    const deletedAppointment = await this.appointmentModel.findByIdAndDelete(id).populate('userId', 'name email').exec();
+
+    if (!deletedAppointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    return deletedAppointment;
+  }
+
+  async update(id: string, updateData: any, userId: string, userRole: string): Promise<Appointment> {
+    const appointment = await this.findById(id);
+
+    if (appointment.userId.toString() !== userId && userRole !== 'BARBER') {
+      throw new ForbiddenException('You can only update your own appointments');
+    }
+
+    const updatedAppointment = await this.appointmentModel
+      .findByIdAndUpdate(id, updateData, { new: true })
+      .populate('userId', 'name email')
+      .exec();
+
+    if (!updatedAppointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    return updatedAppointment;
   }
 }

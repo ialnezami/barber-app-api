@@ -43,6 +43,6 @@ export class TimeslotsController {
   @ApiOperation({ summary: 'Delete a time slot (Barber only)' })
   @ApiResponse({ status: 200, description: 'Time slot deleted successfully' })
   async remove(@Param('id') id: string) {
-    return this.timeslotsService.remove(+id);
+    return this.timeslotsService.remove(id);
   }
 }
