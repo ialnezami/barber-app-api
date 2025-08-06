@@ -19,7 +19,7 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Barber RDV System API')
-    .setDescription('API for managing barber appointments')
+    .setDescription('API for managing barber appointments with MongoDB')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -28,7 +28,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
-  console.log('🚀 Barber RDV System is running on http://localhost:3000');
+  console.log('🚀 Barber RDV System (MongoDB) is running on http://localhost:3000');
   console.log('📚 API Documentation: http://localhost:3000/api');
 }
 bootstrap();
