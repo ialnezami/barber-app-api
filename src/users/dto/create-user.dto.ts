@@ -1,1 +1,17 @@
-export class CreateUserDto {}
+import { IsEmail, IsString, IsEnum, IsOptional } from 'class-validator';
+import { Role } from '../../common/enums/role.enum';
+
+export class CreateUserDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  password: string;
+
+  @IsEnum(Role)
+  @IsOptional()
+  role?: Role;
+}
