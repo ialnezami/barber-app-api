@@ -1,26 +1,80 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
-  create(createAppointmentDto: CreateAppointmentDto) {
-    return 'This action adds a new appointment';
+  constructor(private prisma: PrismaService) {}
+
+  async create(createAppointmentDto: CreateAppointmentDto, userId: number) {
+    return this.prisma.appointment.create({
+      data: {
+        date: new Date(createAppointmentDto.date),
+        userId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all appointments`;
+  async findAll() {
+    return this.prisma.appointment.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} appointment`;
+  async findByUserId(userId: number) {
+    return this.prisma.appointment.findMany({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
   }
 
-  update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
-    return `This action updates a #${id} appointment`;
-  }
+  async remove(id: number, userId: number, userRole: string) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} appointment`;
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    // Only allow the owner or barber to cancel
+    if (appointment.userId !== userId && userRole !== 'BARBER') {
+      throw new ForbiddenException('You can only cancel your own appointments');
+    }
+
+    return this.prisma.appointment.delete({
+      where: { id },
+    });
   }
 }
