@@ -1,26 +1,46 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateTimeslotDto } from './dto/create-timeslot.dto';
-import { UpdateTimeslotDto } from './dto/update-timeslot.dto';
 
 @Injectable()
 export class TimeslotsService {
-  create(createTimeslotDto: CreateTimeslotDto) {
-    return 'This action adds a new timeslot';
+  constructor(private prisma: PrismaService) {}
+
+  async create(createTimeslotDto: CreateTimeslotDto) {
+    return this.prisma.timeSlot.create({
+      data: {
+        date: new Date(createTimeslotDto.date),
+        startTime: new Date(createTimeslotDto.startTime),
+        endTime: new Date(createTimeslotDto.endTime),
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all timeslots`;
+  async findAll() {
+    return this.prisma.timeSlot.findMany({
+      orderBy: {
+        date: 'asc',
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} timeslot`;
+  async findAvailable() {
+    return this.prisma.timeSlot.findMany({
+      where: {
+        isBooked: false,
+        date: {
+          gte: new Date(),
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
   }
 
-  update(id: number, updateTimeslotDto: UpdateTimeslotDto) {
-    return `This action updates a #${id} timeslot`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} timeslot`;
+  async remove(id: number) {
+    return this.prisma.timeSlot.delete({
+      where: { id },
+    });
   }
 }
