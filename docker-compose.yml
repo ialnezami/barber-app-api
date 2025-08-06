@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/barber_rdv
+      - JWT_SECRET=your-secret-key
+    
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=barber_rdv
+
+volumes:
+  mongodb_data:
+
+
+### **Start with Docker:**
+```bash
+docker-compose up -d
+```
